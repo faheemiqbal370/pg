@@ -1,122 +1,144 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useMemo, useRef, useState } from "react";
+import { initialPortfolio, STORAGE_KEY } from "./data/initialPortfolio";
+import Navbar from "./components/Navbar";
+import PortfolioEditor from "./components/PortfolioEditor";
+import PortfolioPreview from "./components/PortfolioPreview";
+import { buildPortfolioHTML } from "./utils/portfolioExport";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function loadPortfolio() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return initialPortfolio;
+    const parsed = JSON.parse(saved);
+    const personal = { ...initialPortfolio.personal, ...(parsed.personal || {}) };
+    const projects = (Array.isArray(parsed.projects) ? parsed.projects : []).map((project) => ({
+      id: project.id ?? Date.now() + Math.random(),
+      title: project.title || project.name || "",
+      description: project.description || "",
+      technologies: Array.isArray(project.technologies) ? project.technologies : [],
+      image: project.image || "",
+      github: project.github || "",
+      live: project.live || project.link || "",
+    }));
+    return {
+      ...initialPortfolio,
+      ...parsed,
+      personal,
+      skills: Array.isArray(parsed.skills) ? parsed.skills : [],
+      projects,
+      education: Array.isArray(parsed.education) ? parsed.education : [],
+      experience: Array.isArray(parsed.experience) ? parsed.experience : [],
+      template: ["developer", "minimal", "editorial"].includes(parsed.template) ? parsed.template : "developer",
+    };
+  } catch {
+    return initialPortfolio;
+  }
 }
 
-export default App
+function App() {
+  const [portfolio, setPortfolio] = useState(loadPortfolio);
+  const [saveState, setSaveState] = useState("saved");
+  const previewRef = useRef(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio));
+        setSaveState("saved");
+      } catch (error) {
+        console.error("Could not save portfolio:", error);
+        setSaveState("error");
+      }
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [portfolio]);
+
+  const updatePersonal = (field, value) => {
+    setPortfolio((current) => ({
+      ...current,
+      personal: { ...current.personal, [field]: value },
+    }));
+  };
+
+  const updateSection = (section, value) => {
+    setPortfolio((current) => ({ ...current, [section]: value }));
+  };
+
+  const openPreview = () => {
+    const html = buildPortfolioHTML(
+      portfolio,
+      previewRef.current?.outerHTML || ""
+    );
+    const tab = window.open("", "_blank");
+    if (!tab) {
+      window.alert("Allow pop-ups for localhost to open the preview.");
+      return;
+    }
+    tab.document.open();
+    tab.document.write(html);
+    tab.document.close();
+  };
+
+  const exportWebsite = () => {
+    const html = buildPortfolioHTML(
+      portfolio,
+      previewRef.current?.outerHTML || ""
+    );
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const filename = (portfolio.personal.name || "my-portfolio")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "my-portfolio";
+    link.href = url;
+    link.download = `${filename}.html`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const completion = useMemo(() => {
+    const checks = [
+      Boolean(portfolio.personal.name.trim()),
+      Boolean(portfolio.personal.title.trim()),
+      Boolean(portfolio.personal.about.trim()),
+      portfolio.skills.length > 0,
+      portfolio.projects.length > 0,
+      portfolio.education.length > 0,
+    ];
+    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  }, [portfolio]);
+
+  return (
+    <div className="app">
+      <Navbar
+        saveState={saveState}
+        onPreview={openPreview}
+        onExport={exportWebsite}
+      />
+      <main className="builder-workspace">
+        <aside className="editor-sidebar">
+          <PortfolioEditor
+            portfolio={portfolio}
+            updatePersonal={updatePersonal}
+            updateSection={updateSection}
+            completion={completion}
+          />
+        </aside>
+        <section className="preview-workspace">
+          <div className="preview-topbar">
+            <div><span className="preview-indicator" /> LIVE WEBSITE PREVIEW</div>
+            <span className="preview-size">Changes appear instantly</span>
+          </div>
+          <PortfolioPreview ref={previewRef} portfolio={portfolio} />
+        </section>
+      </main>
+    </div>
+  );
+}
+
+export default App;

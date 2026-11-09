@@ -1,16 +1,32 @@
-# React + Vite
+# Portify — Visual Portfolio Studio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A client-side React portfolio builder. Users enter their own details, manage skills/projects/education/experience, select a visual template, preview the result, and export a standalone HTML file.
 
-Currently, two official plugins are available:
+## Requirements
+- Node.js 20.19+ or 22.12+
+- npm
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Run locally
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+## Validate
+```bash
+npm run lint
+npm run build
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
+- Empty starting portfolio; no personal sample data is prefilled.
+- Live portfolio preview.
+- Personal details and profile image upload.
+- Add/remove skills.
+- Add/edit/delete projects, education, and experience.
+- Project image upload, technology tags, repository and live-demo links.
+- Developer, Minimal, and Editorial visual themes.
+- Automatic browser localStorage persistence.
+- Open a standalone preview and export a standalone HTML file.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Data is stored in the current browser on the current device. It is not synced to an account or server. Uploaded images are stored as data URLs in localStorage, so keep image files reasonably small.
